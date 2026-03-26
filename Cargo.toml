@@ -5,8 +5,7 @@ members = [
     "crates/application",
     "crates/infrastructure",
     "crates/presentation/api",
-    "crates/shared",
-    "crates/presentation/websocket"]
+    "crates/shared"]
 
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }
