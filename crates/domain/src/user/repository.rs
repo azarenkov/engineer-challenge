@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 
 use crate::{
     shared::{repository::error::RepositoryError, value_objects::password_hash::PasswordHash},
@@ -16,4 +17,24 @@ pub trait UserRepository {
         email: &Email,
     ) -> Result<PasswordHash, RepositoryError>;
     async fn get_user_id_by_email(&self, email: &Email) -> Result<UserId, RepositoryError>;
+
+    async fn save_password_reset_token(
+        &self,
+        email: &Email,
+        token: &str,
+        expires_at: DateTime<Utc>,
+    ) -> Result<(), RepositoryError>;
+
+    async fn get_user_id_and_expiry_by_password_reset_token(
+        &self,
+        token: &str,
+    ) -> Result<(UserId, DateTime<Utc>), RepositoryError>;
+
+    async fn invalidate_password_reset_token(&self, token: &str) -> Result<(), RepositoryError>;
+
+    async fn update_password(
+        &self,
+        user_id: &UserId,
+        password_hash: &PasswordHash,
+    ) -> Result<(), RepositoryError>;
 }

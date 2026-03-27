@@ -3,13 +3,20 @@ use std::{error::Error, sync::Arc};
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, middleware::Logger, web};
 
-use application::{command::auth::register::RegisterUser, query::auth::login::LoginUser};
+use application::{
+    command::auth::{
+        register::RegisterUser, request_password_reset::RequestPasswordReset,
+        reset_password::ResetPassword,
+    },
+    query::auth::login::LoginUser,
+};
 use infrastructure::{
-    config::postgres::PostgresConfig,
+    config::{mailer::MailerConfig, postgres::PostgresConfig},
     database::postgres::{
         connection::create_postgres_pool, repositories::user::PostgresUserRepository,
     },
     hasher::bcrypt::BcryptHasher,
+    mailer::SmtpMailer,
 };
 use shared::rate_limiting::{
     config::RateLimitingConfig, create_governor_config, create_rate_limiting,
@@ -23,19 +30,26 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     let server_config = ServerConfig::from_env()?;
     let postgres_config = PostgresConfig::from_env()?;
     let rate_limiting_config = RateLimitingConfig::from_env()?;
+    let mailer_config = MailerConfig::from_env()?;
 
     let postgres_pool = create_postgres_pool(postgres_config).await?;
 
     let user_repository = Arc::new(PostgresUserRepository::new(postgres_pool.clone()));
 
     let hasher = Arc::new(BcryptHasher::default());
+    let mailer = Arc::new(SmtpMailer::from_config(mailer_config)?);
 
     let register_user = RegisterUser::new(user_repository.clone(), hasher.clone());
     let login_user = LoginUser::new(user_repository.clone(), hasher.clone());
+    let request_password_reset =
+        RequestPasswordReset::new(user_repository.clone(), mailer.clone(), 24); // 24 часов TTL
+    let reset_password = ResetPassword::new(user_repository.clone(), hasher.clone());
 
     let app_state = web::Data::new(AppState::new(
         register_user,
         login_user,
+        request_password_reset,
+        reset_password,
         server_config.jwt_secret,
     ));
 

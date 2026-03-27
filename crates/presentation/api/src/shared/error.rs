@@ -87,6 +87,34 @@ impl ToHttpStatus for RegistrationError {
     }
 }
 
+impl ToHttpStatus for application::command::auth::reset_password::PasswordResetError {
+    fn to_http_status(&self) -> StatusCode {
+        match self {
+            application::command::auth::reset_password::PasswordResetError::Repository(e) => e.to_http_status(),
+            application::command::auth::reset_password::PasswordResetError::Hash(e) => e.to_http_status(),
+            application::command::auth::reset_password::PasswordResetError::Mailer(e) => StatusCode::INTERNAL_SERVER_ERROR,
+            application::command::auth::reset_password::PasswordResetError::InvalidOrExpiredToken => StatusCode::BAD_REQUEST,
+            application::command::auth::reset_password::PasswordResetError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+
+    fn to_user_message(&self) -> String {
+        match self {
+            application::command::auth::reset_password::PasswordResetError::Repository(e) => e.to_user_message(),
+            application::command::auth::reset_password::PasswordResetError::Hash(e) => e.to_user_message(),
+            application::command::auth::reset_password::PasswordResetError::Mailer(_) => "Failed to send email".to_string(),
+            application::command::auth::reset_password::PasswordResetError::InvalidOrExpiredToken => "Invalid or expired token".to_string(),
+            application::command::auth::reset_password::PasswordResetError::Internal => "Internal server error".to_string(),
+        }
+    }
+}
+
+impl From<application::command::auth::reset_password::PasswordResetError> for ApiError {
+    fn from(error: application::command::auth::reset_password::PasswordResetError) -> Self {
+        Self::from_error(error)
+    }
+}
+
 #[derive(Debug)]
 pub struct ApiError {
     message: String,

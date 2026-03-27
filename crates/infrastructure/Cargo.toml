@@ -17,3 +17,5 @@ serde_json = { workspace = true }
 
 sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-rustls", "chrono", "uuid"] }
 bcrypt = "0.18"
+lettre = { version = "0.11.19", features = ["tokio1"] }
+urlencoding = "2.1.3"
