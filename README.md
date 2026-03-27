@@ -379,12 +379,12 @@ sqlx migrate run
 
 7. Собрать проект:
 ```bash
-cargo build --release
+cargo build --bin api
 ```
 
 8. Запустить сервер:
 ```bash
-cargo run --release
+cargo run --bin api
 ```
 
 API будет доступен по адресу http://localhost:8080
