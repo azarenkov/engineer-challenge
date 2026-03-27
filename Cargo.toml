@@ -19,6 +19,8 @@ envy = "0.4.2"
 dotenv = "0.15.0"
 futures = "0.3.32"
 env_logger = "0.11.9"
+mockall = "0.14"
+tokio = { version = "1.50", features = ["full"] }
 
 domain = { path = "crates/domain" }
 application = { path = "crates/application" }

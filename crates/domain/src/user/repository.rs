@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use mockall::automock;
 
 use crate::{
     shared::{repository::error::RepositoryError, value_objects::password_hash::PasswordHash},
@@ -10,6 +11,7 @@ use crate::{
 };
 
 #[async_trait]
+#[automock]
 pub trait UserRepository {
     async fn create_user(&self, user: &User) -> Result<(), RepositoryError>;
     async fn get_password_hash_by_email(

@@ -20,47 +20,44 @@ services:
       retries: 5
       start_period: 10s
 
-  # api:
-  #   build:
-  #     context: .
-  #     dockerfile: docker/api/Dockerfile
-  #   container_name: api
-  #   restart: unless-stopped
-  #   ports:
-  #     - "8080:8080"
-  #   networks:
-  #     - network
-  #   environment:
-  #     # Database (PostgresConfig)
-  #     DATABASE_URL: postgres://postgres:postgres@postgres:5432/challenge
-  #     MAX_CONNECTIONS: 10
-  #     MIN_CONNECTIONS: 2
-  #     CONNECT_TIMEOUT_SECONDS: 30
-  #     IDLE_TIMEOUT_SECONDS: 600
-  #     MAX_LIFETIME_SECONDS: 1800
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - network
+    environment:
+      # Database (PostgresConfig)
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/challenge
+      MAX_CONNECTIONS: 10
+      MIN_CONNECTIONS: 2
+      CONNECT_TIMEOUT_SECONDS: 30
+      IDLE_TIMEOUT_SECONDS: 600
+      MAX_LIFETIME_SECONDS: 1800
 
-  #     # JWT & Server (ServerConfig)
-  #     JWT_SECRET: your-secret-key-change-in-production
-  #     HOST: 0.0.0.0
-  #     PORT: 8080
-  #     RATE_LIMITING_REQUESTS: 10
-  #     RATE_LIMITING_BURST_SIZE: 20
-  #
-  #
-  #
-  # MAILER_HOST=<provider's SMTP server address>
-  # MAILER_PORT=<provider's SMTP server port>
-  # MAILER_USERNAME=<your email address>
-  # MAILER_PASSWORD=<your email password>
-  # MAILER_FROM=<your email address>
-  # MAILER_PASSWORD_RESET_BASE_URL=http://localhost:8080
-  #     # Logging
-  #     RUST_LOG: info
-  #
-  #
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
+      # JWT & Server (ServerConfig)
+      JWT_SECRET: your-secret-key-change-in-production
+      HOST: 0.0.0.0
+      PORT: 8080
+      RATE_LIMITING_REQUESTS: 10
+      RATE_LIMITING_BURST_SIZE: 20
+
+      MAILER_HOST: smtp.mail.ru
+      MAILER_PORT: 465s
+      MAILER_USERNAME: azarenkov20141@mail.ru
+      MAILER_PASSWORD: 85xYx6L9tuT8f7JaDaeD
+      MAILER_FROM: azarenkov20141@mail.ru
+      MAILER_PASSWORD_RESET_BASE_URL: http://localhost:8080
+      # Logging
+      RUST_LOG: info
+
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 networks:
   network:

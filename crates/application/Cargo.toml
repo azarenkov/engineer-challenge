@@ -9,3 +9,5 @@ chrono = { workspace = true }
 domain = { workspace = true }
 thiserror = { workspace = true }
 uuid = { workspace = true }
+mockall = { workspace = true }
+tokio = { workspace = true }
