@@ -16,7 +16,7 @@ use infrastructure::{
         connection::create_postgres_pool, repositories::user::PostgresUserRepository,
     },
     hasher::bcrypt::BcryptHasher,
-    mailer::SmtpMailer,
+    mailer::smtp_mailer::SmtpMailer,
 };
 use shared::rate_limiting::{
     config::RateLimitingConfig, create_governor_config, create_rate_limiting,

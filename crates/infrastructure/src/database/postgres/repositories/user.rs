@@ -10,7 +10,6 @@ use domain::{
     },
 };
 use sqlx::{Pool, Postgres};
-use uuid::Uuid;
 
 use crate::database::postgres::error::map_sqlx_error_to_domain_error;
 
@@ -145,7 +144,7 @@ impl UserRepository for PostgresUserRepository {
 
         match record {
             Some(row) => {
-                if row.used.unwrap_or(false) {
+                if row.used {
                     return Err(RepositoryError::NotFound);
                 }
                 let user_id = UserId::new(row.user_id);

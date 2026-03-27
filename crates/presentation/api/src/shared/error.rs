@@ -92,7 +92,7 @@ impl ToHttpStatus for application::command::auth::reset_password::PasswordResetE
         match self {
             application::command::auth::reset_password::PasswordResetError::Repository(e) => e.to_http_status(),
             application::command::auth::reset_password::PasswordResetError::Hash(e) => e.to_http_status(),
-            application::command::auth::reset_password::PasswordResetError::Mailer(e) => StatusCode::INTERNAL_SERVER_ERROR,
+            application::command::auth::reset_password::PasswordResetError::Mailer(_) => StatusCode::INTERNAL_SERVER_ERROR,
             application::command::auth::reset_password::PasswordResetError::InvalidOrExpiredToken => StatusCode::BAD_REQUEST,
             application::command::auth::reset_password::PasswordResetError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
         }

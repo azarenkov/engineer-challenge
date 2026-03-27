@@ -1,11 +1,10 @@
-use async_trait::async_trait;
-use lettre::Message;
-use lettre::message::header::ContentType;
-use lettre::transport::smtp::{AsyncSmtpTransport, Tokio1Executor, authentication::Credentials};
-use std::sync::Arc;
-
 use crate::config::mailer::MailerConfig;
 use application::ports::mailer::{Mailer, MailerError};
+use async_trait::async_trait;
+use lettre::message::{Mailbox, header::ContentType};
+use lettre::transport::smtp::authentication::Credentials;
+use lettre::{Message, SmtpTransport, Transport};
+use std::sync::{Arc, Mutex};
 use urlencoding::encode;
 
 #[derive(Clone)]
@@ -14,36 +13,30 @@ pub struct SmtpMailer {
 }
 
 struct Inner {
-    mailer: AsyncSmtpTransport<Tokio1Executor>,
-    from: String,
+    mailer: Mutex<SmtpTransport>,
+    from_mailbox: Mailbox,
     reset_base_url: String,
 }
 
 impl SmtpMailer {
     pub fn from_config(cfg: MailerConfig) -> Result<Self, MailerError> {
-        let host = cfg.host;
-        let port = cfg.port;
-        let username = cfg.username;
-        let password = cfg.password;
-        let from = cfg.from;
-        let reset_base_url = cfg.password_reset_base_url;
+        let from_mailbox: Mailbox = cfg
+            .from
+            .parse()
+            .map_err(|e| MailerError::Sending(format!("invalid MAILER_FROM: {}", e)))?;
 
-        let builder = AsyncSmtpTransport::<Tokio1Executor>::relay(&host).map_err(|e| {
-            MailerError::Sending(format!("failed to create relay for host {}: {}", host, e))
-        })?;
-
-        let creds = Credentials::new(username, password);
-
-        let transport = builder.credentials(creds).port(port).build();
-
-        let inner = Inner {
-            mailer: transport,
-            from,
-            reset_base_url,
-        };
+        let transport = SmtpTransport::relay(&cfg.host)
+            .map_err(|e| MailerError::Sending(format!("failed to create relay: {}", e)))?
+            .credentials(Credentials::new(cfg.username, cfg.password))
+            .port(cfg.port)
+            .build();
 
         Ok(Self {
-            inner: Arc::new(inner),
+            inner: Arc::new(Inner {
+                mailer: Mutex::new(transport),
+                from_mailbox,
+                reset_base_url: cfg.password_reset_base_url,
+            }),
         })
     }
 }
@@ -54,36 +47,37 @@ impl Mailer for SmtpMailer {
         let reset_link = format!(
             "{}/reset-password?token={}",
             self.inner.reset_base_url.trim_end_matches('/'),
-            encode(token)
+            encode(token).into_owned()
         );
 
         let html_body = format!(
-            r#"
-            <p>Здравствуйте,</p>
-            <p>Вы запросили сброс пароля. Перейдите по ссылке ниже, чтобы задать новый пароль:</p>
+            r#"<p>Здравствуйте,</p>
+            <p>Вы запросили сброс пароля. Перейдите по ссылке ниже:</p>
             <p><a href="{link}">{link}</a></p>
-            <p>Если вы не запрашивали сброс пароля, просто проигнорируйте это сообщение.</p>
-            "#,
+            <p>Если вы не запрашивали сброс пароля, проигнорируйте это сообщение.</p>"#,
             link = reset_link
         );
 
-        let email =
-            Message::builder()
-                .from(self.inner.from.parse().map_err(|e| {
-                    MailerError::Sending(format!("invalid MAILER_FROM (from): {}", e))
-                })?)
-                .to(to.parse().map_err(|e| {
-                    MailerError::Sending(format!("invalid recipient address: {}", e))
-                })?)
-                .subject("Сброс пароля")
-                .header(ContentType::TEXT_HTML)
-                .body(html_body)
-                .map_err(|e| MailerError::Sending(format!("failed to build message: {}", e)))?;
+        let to_mailbox: Mailbox = to
+            .parse()
+            .map_err(|e| MailerError::Sending(format!("invalid recipient address: {}", e)))?;
 
-        self.inner
+        let email = Message::builder()
+            .from(self.inner.from_mailbox.clone())
+            .to(to_mailbox)
+            .subject("Сброс пароля")
+            .header(ContentType::TEXT_HTML)
+            .body(html_body)
+            .map_err(|e| MailerError::Sending(format!("failed to build message: {}", e)))?;
+
+        let mailer = self
+            .inner
             .mailer
-            .send(email)
-            .await
+            .lock()
+            .map_err(|e| MailerError::Sending(format!("mutex poisoned: {}", e)))?;
+
+        mailer
+            .send(&email)
             .map_err(|e| MailerError::Sending(format!("failed to send email: {}", e)))?;
 
         Ok(())

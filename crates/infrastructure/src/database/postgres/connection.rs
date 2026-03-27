@@ -1,6 +1,6 @@
 use std::{error::Error, time::Duration};
 
-use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
+use sqlx::{Pool, Postgres, migrate, postgres::PgPoolOptions};
 
 use crate::config::postgres::PostgresConfig;
 
@@ -18,6 +18,8 @@ pub async fn create_postgres_pool(
         .map_err(Box::<dyn Error>::from)?;
 
     health_check(&pool).await?;
+
+    migrate!("../../migrations").run(&pool).await?;
 
     Ok(pool)
 }

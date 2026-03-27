@@ -7,7 +7,8 @@ use crate::shared::{
     dto::{
         requests::auth::{
             login::LoginUserRequest, refresh_token::RefreshTokenRequest,
-            registration::RegisterUserRequest,
+            registration::RegisterUserRequest, request_password_reset::RequestPasswordResetRequest,
+            reset_password::ResetPasswordRequest,
         },
         responses::{ApiResponse, auth::registration::RegisterUserResponse},
     },
@@ -73,4 +74,36 @@ async fn refresh_tokens(
         })?;
 
     Ok(HttpResponse::Ok().json(ApiResponse::success(token_pair)))
+}
+
+#[post("/request-password-reset")]
+async fn request_password_reset(
+    app_state: web::Data<AppState>,
+    request: web::Json<RequestPasswordResetRequest>,
+) -> Result<impl Responder, ApiError> {
+    let request: RequestPasswordResetRequest = request.into_inner();
+    request.validate()?;
+
+    app_state
+        .request_password_reset
+        .execute(request.into())
+        .await?;
+
+    Ok(HttpResponse::Ok().json(ApiResponse::success("Password reset email sent")))
+}
+
+#[post("/reset-password")]
+async fn reset_password(
+    app_state: web::Data<AppState>,
+    request: web::Json<ResetPasswordRequest>,
+) -> Result<impl Responder, ApiError> {
+    let request: ResetPasswordRequest = request.into_inner();
+    request.validate()?;
+
+    let user_id = app_state.reset_password.execute(request.into()).await?;
+
+    Ok(HttpResponse::Ok().json(ApiResponse::success(format!(
+        "Password reset successfully for user: {}",
+        user_id.uuid()
+    ))))
 }

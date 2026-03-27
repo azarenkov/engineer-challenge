@@ -7,7 +7,7 @@ use application::{
 };
 use infrastructure::{
     database::postgres::repositories::user::PostgresUserRepository, hasher::bcrypt::BcryptHasher,
-    mailer::SmtpMailer,
+    mailer::smtp_mailer::SmtpMailer,
 };
 
 pub struct AppState {
